@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 
+import '../models/daily_reward.dart';
 import '../models/game_level.dart';
 import '../models/game_theme.dart';
+import '../services/daily_reward_service.dart';
 import '../services/level_service.dart';
 import '../services/score_service.dart';
 import '../services/store_service.dart';
+import '../widgets/daily_reward_dialog.dart';
 import '../widgets/stack_logo.dart';
 import 'game_screen.dart';
 import 'levels_screen.dart';
@@ -21,10 +24,14 @@ class _HomeScreenState extends State<HomeScreen> {
   final _scoreService = ScoreService();
   final _storeService = StoreService();
   final _levelService = LevelService();
+  final _dailyRewardService = DailyRewardService();
 
   int _bestScore = 0;
   int _coins = 0;
   int _claimableLevels = 0;
+  int? _pendingRewardDay;
+  int _streak = 0;
+  bool _dailyDialogAutoShown = false;
   GameTheme _selectedTheme = kClassicTheme;
 
   @override
@@ -38,6 +45,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final coins = await _storeService.loadCoins();
     final selectedId = await _storeService.loadSelectedThemeId();
     final claimedIds = await _levelService.loadClaimedLevelIds();
+    final pendingRewardDay = await _dailyRewardService.pendingStreakDay();
+    final streak = await _dailyRewardService.loadStreak();
     if (!mounted) return;
     setState(() {
       _bestScore = best;
@@ -46,6 +55,37 @@ class _HomeScreenState extends State<HomeScreen> {
       _claimableLevels = kGameLevels
           .where((l) => best >= l.targetScore && !claimedIds.contains(l.id))
           .length;
+      _pendingRewardDay = pendingRewardDay;
+      _streak = streak;
+    });
+
+    if (!_dailyDialogAutoShown && pendingRewardDay != null) {
+      _dailyDialogAutoShown = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _showDailyRewardDialog());
+    }
+  }
+
+  Future<void> _showDailyRewardDialog() async {
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (_) => DailyRewardDialog(
+        pendingDay: _pendingRewardDay,
+        streak: _streak,
+        onClaim: _claimDailyReward,
+      ),
+    );
+  }
+
+  Future<void> _claimDailyReward() async {
+    final day = await _dailyRewardService.claim();
+    final newCoins = await _storeService.addCoins(kDailyRewards[day - 1]);
+    if (!mounted) return;
+    Navigator.of(context).pop();
+    setState(() {
+      _coins = newCoins;
+      _streak = day;
+      _pendingRewardDay = null;
     });
   }
 
@@ -75,10 +115,20 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFF1B1F3B),
       body: SafeArea(
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
+        child: Stack(
+          children: [
+            Positioned(
+              top: 8,
+              right: 8,
+              child: _GiftButton(
+                hasReward: _pendingRewardDay != null,
+                onTap: _showDailyRewardDialog,
+              ),
+            ),
+            Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
               const StackLogo(scale: 1.2),
               const SizedBox(height: 24),
               const Text(
@@ -156,8 +206,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
               ),
-            ],
-          ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -230,6 +282,46 @@ class _MenuButton extends StatelessWidget {
                 '$badgeCount',
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// Top-right icon that opens the daily reward dialog anytime, with a
+/// small dot when a gift is waiting to be claimed.
+class _GiftButton extends StatelessWidget {
+  const _GiftButton({required this.hasReward, required this.onTap});
+
+  final bool hasReward;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        IconButton(
+          onPressed: onTap,
+          icon: const Icon(Icons.card_giftcard, color: Colors.white70),
+          style: IconButton.styleFrom(
+            backgroundColor: Colors.black.withValues(alpha: 0.25),
+            shape: const CircleBorder(),
+          ),
+        ),
+        if (hasReward)
+          Positioned(
+            top: 6,
+            right: 6,
+            child: Container(
+              width: 13,
+              height: 13,
+              decoration: BoxDecoration(
+                color: Colors.redAccent,
+                shape: BoxShape.circle,
+                border: Border.all(color: const Color(0xFF1B1F3B), width: 2),
               ),
             ),
           ),
