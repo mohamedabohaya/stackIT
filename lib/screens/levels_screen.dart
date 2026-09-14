@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/game_level.dart';
+import '../services/heart_service.dart';
 import '../services/level_service.dart';
 import '../services/score_service.dart';
 import '../services/store_service.dart';
@@ -16,9 +17,11 @@ class _LevelsScreenState extends State<LevelsScreen> {
   final _levelService = LevelService();
   final _scoreService = ScoreService();
   final _storeService = StoreService();
+  final _heartService = HeartService();
 
   int _bestScore = 0;
   int _coins = 0;
+  int _hearts = 0;
   Set<int> _claimedIds = {};
   bool _loading = true;
 
@@ -31,11 +34,13 @@ class _LevelsScreenState extends State<LevelsScreen> {
   Future<void> _load() async {
     final best = await _scoreService.loadBestScore();
     final coins = await _storeService.loadCoins();
+    final hearts = await _heartService.loadHearts();
     final claimed = await _levelService.loadClaimedLevelIds();
     if (!mounted) return;
     setState(() {
       _bestScore = best;
       _coins = coins;
+      _hearts = hearts;
       _claimedIds = claimed;
       _loading = false;
     });
@@ -45,17 +50,19 @@ class _LevelsScreenState extends State<LevelsScreen> {
     if (_claimedIds.contains(level.id) || _bestScore < level.targetScore) return;
 
     final newCoins = await _storeService.addCoins(level.reward);
+    final newHearts = await _heartService.addHearts(1);
     await _levelService.markClaimed(level.id);
     if (!mounted) return;
     setState(() {
       _coins = newCoins;
+      _hearts = newHearts;
       _claimedIds = {..._claimedIds, level.id};
     });
 
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(
-        content: Text('Claimed ${level.reward} 🪙 for Level ${level.id}!'),
+        content: Text('Claimed ${level.reward} 🪙 +1 ❤️ for Level ${level.id}!'),
         duration: const Duration(seconds: 2),
       ));
   }
@@ -96,13 +103,27 @@ class _LevelsScreenState extends State<LevelsScreen> {
                       color: Colors.black.withValues(alpha: 0.35),
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    child: Text(
-                      '🪙 $_coins',
-                      style: const TextStyle(
-                        color: Colors.amberAccent,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '🪙 $_coins',
+                          style: const TextStyle(
+                            color: Colors.amberAccent,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          '❤️ $_hearts',
+                          style: const TextStyle(
+                            color: Colors.redAccent,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -239,7 +260,7 @@ class _LevelCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      '🎁 ${level.reward} 🪙',
+                      '🎁 ${level.reward} 🪙 +1❤️',
                       style: TextStyle(
                         color: claimed ? Colors.white38 : Colors.white,
                         fontWeight: FontWeight.w700,

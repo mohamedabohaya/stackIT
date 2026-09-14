@@ -4,6 +4,7 @@ import '../models/daily_reward.dart';
 import '../models/game_level.dart';
 import '../models/game_theme.dart';
 import '../services/daily_reward_service.dart';
+import '../services/heart_service.dart';
 import '../services/level_service.dart';
 import '../services/score_service.dart';
 import '../services/store_service.dart';
@@ -25,9 +26,11 @@ class _HomeScreenState extends State<HomeScreen> {
   final _storeService = StoreService();
   final _levelService = LevelService();
   final _dailyRewardService = DailyRewardService();
+  final _heartService = HeartService();
 
   int _bestScore = 0;
   int _coins = 0;
+  int _hearts = 0;
   int _claimableLevels = 0;
   int? _pendingRewardDay;
   int _streak = 0;
@@ -43,6 +46,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadData() async {
     final best = await _scoreService.loadBestScore();
     final coins = await _storeService.loadCoins();
+    final hearts = await _heartService.loadHearts();
     final selectedId = await _storeService.loadSelectedThemeId();
     final claimedIds = await _levelService.loadClaimedLevelIds();
     final pendingRewardDay = await _dailyRewardService.pendingStreakDay();
@@ -51,6 +55,7 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _bestScore = best;
       _coins = coins;
+      _hearts = hearts;
       _selectedTheme = themeById(selectedId);
       _claimableLevels = kGameLevels
           .where((l) => best >= l.targetScore && !claimedIds.contains(l.id))
@@ -80,10 +85,13 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _claimDailyReward() async {
     final day = await _dailyRewardService.claim();
     final newCoins = await _storeService.addCoins(kDailyRewards[day - 1]);
+    final isBonusDay = day == kDailyRewards.length;
+    final newHearts = isBonusDay ? await _heartService.addHearts(1) : _hearts;
     if (!mounted) return;
     Navigator.of(context).pop();
     setState(() {
       _coins = newCoins;
+      _hearts = newHearts;
       _streak = day;
       _pendingRewardDay = null;
     });
@@ -157,6 +165,15 @@ class _HomeScreenState extends State<HomeScreen> {
                     '🪙 $_coins',
                     style: const TextStyle(
                       color: Colors.amberAccent,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Text(
+                    '❤️ $_hearts',
+                    style: const TextStyle(
+                      color: Colors.redAccent,
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),

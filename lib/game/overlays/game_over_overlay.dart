@@ -75,7 +75,45 @@ class GameOverOverlay extends StatelessWidget {
                 ),
               ),
             ],
+            if (isNewBest) ...[
+              const SizedBox(height: 4),
+              const Text(
+                '+1 ❤️ for the new record!',
+                style: TextStyle(
+                  color: Colors.redAccent,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                ),
+              ),
+            ],
             const SizedBox(height: 24),
+            ValueListenableBuilder<int>(
+              valueListenable: game.heartsNotifier,
+              builder: (context, hearts, _) {
+                final canContinue = hearts > 0;
+                return SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: canContinue ? game.continueGame : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.redAccent,
+                      disabledBackgroundColor: Colors.white24,
+                      disabledForegroundColor: Colors.white54,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    child: Text(
+                      canContinue ? 'CONTINUE — USE 1 ❤️ ($hearts LEFT)' : 'CONTINUE (0 ❤️ — VISIT STORE)',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, letterSpacing: 0.5),
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(

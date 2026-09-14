@@ -6,6 +6,7 @@ import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 
 import '../models/game_theme.dart';
+import '../services/heart_service.dart';
 import '../services/score_service.dart';
 import '../services/store_service.dart';
 import 'components/block_component.dart';
@@ -16,11 +17,13 @@ class StackItGame extends FlameGame {
   StackItGame({
     required this.scoreService,
     required this.storeService,
+    required this.heartService,
     this.theme = kClassicTheme,
   });
 
   final ScoreService scoreService;
   final StoreService storeService;
+  final HeartService heartService;
   final GameTheme theme;
 
   static const double worldWidth = 400;
@@ -40,9 +43,12 @@ class StackItGame extends FlameGame {
   int score = 0;
   int bestScore = 0;
   bool isGameOver = false;
+  int _coinsAwardedThisRun = 0;
 
   final ValueNotifier<int> scoreNotifier = ValueNotifier<int>(0);
   final ValueNotifier<int> bestScoreNotifier = ValueNotifier<int>(0);
+  final ValueNotifier<int> coinsNotifier = ValueNotifier<int>(0);
+  final ValueNotifier<int> heartsNotifier = ValueNotifier<int>(0);
 
   @override
   Color backgroundColor() => theme.backgroundColor;
@@ -52,6 +58,8 @@ class StackItGame extends FlameGame {
     camera.viewfinder.visibleGameSize = Vector2(worldWidth, worldHeight);
     bestScore = await scoreService.loadBestScore();
     bestScoreNotifier.value = bestScore;
+    coinsNotifier.value = await storeService.loadCoins();
+    heartsNotifier.value = await heartService.loadHearts();
     _startNewGame();
   }
 
@@ -61,6 +69,7 @@ class StackItGame extends FlameGame {
     score = 0;
     scoreNotifier.value = 0;
     isGameOver = false;
+    _coinsAwardedThisRun = 0;
     camera.viewfinder.position = Vector2(worldWidth / 2, worldHeight / 2);
 
     final baseLeft = (worldWidth - baseBlockWidth) / 2;
@@ -208,20 +217,38 @@ class StackItGame extends FlameGame {
     _movingBlockComponent?.removeFromParent();
     _movingBlockComponent = null;
     _moving = null;
+
     if (score > bestScore) {
       bestScore = score;
       bestScoreNotifier.value = bestScore;
       scoreService.saveBestScore(bestScore);
+      heartService.addHearts(1).then((hearts) => heartsNotifier.value = hearts);
     }
-    if (score > 0) {
-      storeService.addCoins(score);
+
+    final newCoins = score - _coinsAwardedThisRun;
+    if (newCoins > 0) {
+      _coinsAwardedThisRun = score;
+      storeService.addCoins(newCoins).then((coins) => coinsNotifier.value = coins);
     }
+
     overlays.add('gameOver');
   }
 
   void retry() {
     overlays.remove('gameOver');
     _startNewGame();
+  }
+
+  /// Spends one heart to resume the current run from the stack as it was
+  /// at the moment of failure, instead of starting over.
+  Future<void> continueGame() async {
+    final spent = await heartService.spendHeart();
+    if (!spent) return;
+    heartsNotifier.value = await heartService.loadHearts();
+
+    isGameOver = false;
+    overlays.remove('gameOver');
+    _spawnMovingBlock();
   }
 }
 

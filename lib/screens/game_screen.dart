@@ -5,6 +5,7 @@ import '../game/overlays/game_over_overlay.dart';
 import '../game/overlays/score_overlay.dart';
 import '../game/stack_it_game.dart';
 import '../models/game_theme.dart';
+import '../services/heart_service.dart';
 import '../services/score_service.dart';
 import '../services/store_service.dart';
 
@@ -26,6 +27,7 @@ class _GameScreenState extends State<GameScreen> {
     _game = StackItGame(
       scoreService: ScoreService(),
       storeService: StoreService(),
+      heartService: HeartService(),
       theme: widget.theme,
     );
   }

@@ -22,6 +22,16 @@ class StoreService {
     return updated;
   }
 
+  /// Attempts to deduct [amount] coins from the wallet. Returns true if
+  /// there were enough coins to cover it.
+  Future<bool> spendCoins(int amount) async {
+    final prefs = await SharedPreferences.getInstance();
+    final coins = prefs.getInt(_coinsKey) ?? 0;
+    if (coins < amount) return false;
+    await prefs.setInt(_coinsKey, coins - amount);
+    return true;
+  }
+
   Future<Set<String>> loadUnlockedThemeIds() async {
     final prefs = await SharedPreferences.getInstance();
     final stored = prefs.getStringList(_unlockedKey) ?? const [];

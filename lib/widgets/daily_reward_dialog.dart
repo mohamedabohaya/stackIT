@@ -85,7 +85,9 @@ class DailyRewardDialog extends StatelessWidget {
                 ),
                 child: Text(
                   pendingDay != null
-                      ? 'CLAIM +${kDailyRewards[pendingDay! - 1]} 🪙'
+                      ? pendingDay == kDailyRewards.length
+                          ? 'CLAIM +${kDailyRewards[pendingDay! - 1]} 🪙 +1 ❤️'
+                          : 'CLAIM +${kDailyRewards[pendingDay! - 1]} 🪙'
                       : 'COME BACK TOMORROW',
                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, letterSpacing: 0.5),
                 ),
@@ -146,6 +148,7 @@ class _DayBadge extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text('$reward', style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 13)),
+          if (isBonusDay) Text('+1 ❤️', style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold)),
         ],
       ),
     );
