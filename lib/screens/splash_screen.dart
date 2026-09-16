@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../services/audio_service.dart';
 import '../widgets/stack_logo.dart';
 import 'home_screen.dart';
 
@@ -25,6 +26,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   @override
   void initState() {
     super.initState();
+    AudioService.init().then((_) => AudioService.playSplash());
     _controller = AnimationController(vsync: this, duration: _dropDuration);
 
     final barCount = StackLogo.bars.length;
@@ -49,6 +51,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     _controller.forward();
 
     _navigateTimer = Timer(_dropDuration + _holdBeforeNavigate, () {
+      AudioService.stopSplash();
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const HomeScreen()),
@@ -59,6 +62,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   @override
   void dispose() {
     _navigateTimer?.cancel();
+    AudioService.stopSplash();
     _controller.dispose();
     super.dispose();
   }

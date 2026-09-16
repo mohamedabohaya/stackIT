@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/daily_reward.dart';
 import '../models/game_level.dart';
 import '../models/game_theme.dart';
+import '../services/audio_service.dart';
 import '../services/daily_reward_service.dart';
 import '../services/heart_service.dart';
 import '../services/level_service.dart';
@@ -35,12 +36,22 @@ class _HomeScreenState extends State<HomeScreen> {
   int? _pendingRewardDay;
   int _streak = 0;
   bool _dailyDialogAutoShown = false;
+  bool _muted = AudioService.isMuted;
   GameTheme _selectedTheme = kClassicTheme;
 
   @override
   void initState() {
     super.initState();
+    AudioService.init().then((_) {
+      if (mounted) setState(() => _muted = AudioService.isMuted);
+    });
     _loadData();
+  }
+
+  Future<void> _toggleMute() async {
+    await AudioService.toggleMuted();
+    if (!mounted) return;
+    setState(() => _muted = AudioService.isMuted);
   }
 
   Future<void> _loadData() async {
@@ -87,6 +98,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final newCoins = await _storeService.addCoins(kDailyRewards[day - 1]);
     final isBonusDay = day == kDailyRewards.length;
     final newHearts = isBonusDay ? await _heartService.addHearts(1) : _hearts;
+    AudioService.playCoin();
     if (!mounted) return;
     Navigator.of(context).pop();
     setState(() {
@@ -98,6 +110,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _play() async {
+    AudioService.playTap();
     await Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => GameScreen(theme: _selectedTheme)),
     );
@@ -105,6 +118,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _openStore() async {
+    AudioService.playTap();
     await Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const StoreScreen()),
     );
@@ -112,6 +126,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _openLevels() async {
+    AudioService.playTap();
     await Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const LevelsScreen()),
     );
@@ -128,9 +143,18 @@ class _HomeScreenState extends State<HomeScreen> {
             Positioned(
               top: 8,
               right: 8,
-              child: _GiftButton(
-                hasReward: _pendingRewardDay != null,
-                onTap: _showDailyRewardDialog,
+              child: Row(
+                children: [
+                  _RoundIconButton(
+                    icon: _muted ? Icons.volume_off : Icons.volume_up,
+                    onTap: _toggleMute,
+                  ),
+                  const SizedBox(width: 10),
+                  _GiftButton(
+                    hasReward: _pendingRewardDay != null,
+                    onTap: _showDailyRewardDialog,
+                  ),
+                ],
               ),
             ),
             Center(
@@ -307,6 +331,27 @@ class _MenuButton extends StatelessWidget {
   }
 }
 
+/// A plain circular icon button matching the top-bar style, reused by
+/// the mute toggle and (with a badge) the gift button.
+class _RoundIconButton extends StatelessWidget {
+  const _RoundIconButton({required this.icon, required this.onTap});
+
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      onPressed: onTap,
+      icon: Icon(icon, color: Colors.white70),
+      style: IconButton.styleFrom(
+        backgroundColor: Colors.black.withValues(alpha: 0.25),
+        shape: const CircleBorder(),
+      ),
+    );
+  }
+}
+
 /// Top-right icon that opens the daily reward dialog anytime, with a
 /// small dot when a gift is waiting to be claimed.
 class _GiftButton extends StatelessWidget {
@@ -320,14 +365,7 @@ class _GiftButton extends StatelessWidget {
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        IconButton(
-          onPressed: onTap,
-          icon: const Icon(Icons.card_giftcard, color: Colors.white70),
-          style: IconButton.styleFrom(
-            backgroundColor: Colors.black.withValues(alpha: 0.25),
-            shape: const CircleBorder(),
-          ),
-        ),
+        _RoundIconButton(icon: Icons.card_giftcard, onTap: onTap),
         if (hasReward)
           Positioned(
             top: 6,

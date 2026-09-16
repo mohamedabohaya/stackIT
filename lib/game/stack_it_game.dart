@@ -6,6 +6,7 @@ import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 
 import '../models/game_theme.dart';
+import '../services/audio_service.dart';
 import '../services/heart_service.dart';
 import '../services/score_service.dart';
 import '../services/store_service.dart';
@@ -208,6 +209,7 @@ class StackItGame extends FlameGame {
     score++;
     scoreNotifier.value = score;
     _moving = null;
+    AudioService.playPlace();
 
     _spawnMovingBlock();
   }
@@ -217,6 +219,7 @@ class StackItGame extends FlameGame {
     _movingBlockComponent?.removeFromParent();
     _movingBlockComponent = null;
     _moving = null;
+    AudioService.playGameOver();
 
     if (score > bestScore) {
       bestScore = score;
