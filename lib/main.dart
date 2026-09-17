@@ -3,16 +3,16 @@ import 'package:flutter/material.dart';
 import 'screens/splash_screen.dart';
 
 void main() {
-  runApp(const StackItApp());
+  runApp(const StackyApp());
 }
 
-class StackItApp extends StatelessWidget {
-  const StackItApp({super.key});
+class StackyApp extends StatelessWidget {
+  const StackyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Stack It',
+      title: 'Stacky',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorSchemeSeed: const Color(0xFF6C63FF),

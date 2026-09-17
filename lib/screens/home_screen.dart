@@ -164,7 +164,7 @@ class _HomeScreenState extends State<HomeScreen> {
               const StackLogo(scale: 1.2),
               const SizedBox(height: 24),
               const Text(
-                'STACK IT',
+                'STACKY',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 34,

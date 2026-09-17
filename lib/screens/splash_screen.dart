@@ -102,7 +102,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
               child: SlideTransition(
                 position: _titleSlide,
                 child: const Text(
-                  'STACK IT',
+                  'STACKY',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 32,

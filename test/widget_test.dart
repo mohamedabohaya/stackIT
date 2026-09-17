@@ -9,9 +9,9 @@ void main() {
   });
 
   testWidgets('Splash screen shows the title then navigates to the home screen', (WidgetTester tester) async {
-    await tester.pumpWidget(const StackItApp());
+    await tester.pumpWidget(const StackyApp());
 
-    expect(find.text('STACK IT'), findsOneWidget);
+    expect(find.text('STACKY'), findsOneWidget);
     expect(find.text('PLAY'), findsNothing);
 
     await tester.pump(const Duration(milliseconds: 2100));
@@ -21,7 +21,7 @@ void main() {
   });
 
   testWidgets('Daily reward dialog appears on first launch and can be claimed', (WidgetTester tester) async {
-    await tester.pumpWidget(const StackItApp());
+    await tester.pumpWidget(const StackyApp());
     await tester.pump(const Duration(milliseconds: 2100));
     await tester.pumpAndSettle();
 
@@ -36,7 +36,7 @@ void main() {
   });
 
   testWidgets('Tapping PLAY starts the game and dropping a block scores', (WidgetTester tester) async {
-    await tester.pumpWidget(const StackItApp());
+    await tester.pumpWidget(const StackyApp());
     await tester.pump(const Duration(milliseconds: 2100));
     await tester.pumpAndSettle();
 
